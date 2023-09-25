@@ -9,11 +9,6 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'carts.sqlite')
 db = SQLAlchemy(app)
 
-# app = Flask(__name__)
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///carts.db'  # SQLite database file
-# db = SQLAlchemy(app)
-
-# Define a model for the Cart
 class Cart(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, nullable=False)
@@ -21,14 +16,14 @@ class Cart(db.Model):
     quantity = db.Column(db.Integer, nullable=False)
 
 # URL of the Product Service
-product_service_url = 'http://product-service-url/products'  # Update with your actual Product Service URL
+product_service_url = 'https://shopping-cart-xtyx.onrender.com'
 
 @app.route('/cart/<int:user_id>', methods=['GET'])
 def get_cart(user_id):
     cart_items = Cart.query.filter_by(user_id=user_id).all()
     cart_data = []
     for cart_item in cart_items:
-        product_response = requests.get(f'{product_service_url}/{cart_item.product_id}')
+        product_response = requests.get(f'{product_service_url}/products/{cart_item.product_id}')
         if product_response.status_code == 200:
             product = product_response.json()
             cart_data.append({
@@ -44,11 +39,17 @@ def add_to_cart(user_id, product_id):
     quantity = request.json.get('quantity', 1)
     
     # Check if the product exists in the Product Service
-    product_response = requests.get(f'{product_service_url}/{product_id}')
+    product_response = requests.get(f'{product_service_url}/products/{product_id}')
     if product_response.status_code != 200:
         return jsonify({'message': 'Product not found'}), 404
     
     product = product_response.json()
+    
+    # Check if the user exists; if not, create the user
+    user_exists = Cart.query.filter_by(user_id=user_id).first()
+    if not user_exists:
+        new_user = Cart(user_id=user_id, product_id=product_id, quantity=quantity)
+        db.session.add(new_user)
     
     existing_cart_item = Cart.query.filter_by(user_id=user_id, product_id=product_id).first()
     
@@ -81,6 +82,6 @@ def remove_from_cart(user_id, product_id):
     return jsonify({'message': 'Product removed from cart'}), 200
 
 if __name__ == '__main__':
-    with app.app_context():  # Create an application context
-        db.create_all()  # Create the database tables
-    app.run(debug=True)
+    with app.app_context():
+        db.create_all() 
+    app.run(host='0.0.0.0', port=8000, debug=True)
