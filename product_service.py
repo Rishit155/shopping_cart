@@ -8,11 +8,6 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'products.sqlite')
 db = SQLAlchemy(app)
 
-# app = Flask(__name__)
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///products.db'  # SQLite database file
-# db = SQLAlchemy(app)
-
-# Define a model for the Product
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
@@ -67,6 +62,6 @@ def add_product():
     return jsonify({'message': 'Product added successfully'}), 201
 
 if __name__ == '__main__':
-    with app.app_context():  # Create an application context
-        db.create_all()  # Create the database tables
+    with app.app_context():
+        db.create_all() 
     app.run(host='0.0.0.0', port=5000, debug=True)
